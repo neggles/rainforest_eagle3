@@ -67,8 +67,6 @@ class Eagle3ConfigFlowHandler(ConfigFlow, domain=DOMAIN):
     @callback
     def async_get_options_flow(config_entry: ConfigEntry) -> OptionsFlow:
         """Get the options flow for this handler."""
-        # Remove this method and the ExampleOptionsFlowHandler class
-        # if you do not want any options for your integration.
         return Eagle3OptionsFlowHandler(config_entry)
 
     async def async_step_user(self, user_input: dict | None = None) -> ConfigFlowResult:

@@ -1,8 +1,12 @@
-"""Constants for integration_blueprint."""
+"""Constants for rainforest_eagle3."""
 
-from logging import Logger, getLogger
+from typing import Final
 
-LOGGER: Logger = getLogger(__package__)
+DOMAIN = "rainforest_eagle3"
 
-DOMAIN = "integration_blueprint"
-ATTRIBUTION = "Data provided by http://jsonplaceholder.typicode.com/"
+MIN_SCAN_INTERVAL: Final = 5  # seconds
+DEFAULT_SCAN_INTERVAL: Final = 30  # seconds
+
+# custom config keys
+CONF_CLOUD_ID: Final = "cloud_id"
+CONF_INSTALL_CODE: Final = "install_code"

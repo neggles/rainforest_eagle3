@@ -46,6 +46,9 @@ ignore = [
     "D212",   # multi-line-summary-first-line (incompatible with formatter)
     "COM812", # incompatible with formatter
     "ISC001", # incompatible with formatter
+    "FBT001", # I will use positional bools and you can't stop me
+    "FBT002", # I will use positional bools and you can't stop me
+    "T20" , # no you cannot take print away from me either wtf
 ]
 
 [tool.ruff.lint.flake8-pytest-style]

@@ -1,62 +1,48 @@
 """
-Custom integration to integrate integration_blueprint with Home Assistant.
+Custom integration to integrate rainforest_eagle3 with Home Assistant.
 
 For more details about this integration, please refer to
 https://github.com/neggles/rainforest_eagle3
 """
 
-from __future__ import annotations
+from dataclasses import dataclass
+import logging
 
-from datetime import timedelta
-from typing import TYPE_CHECKING
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import Platform
+from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import ConfigEntryNotReady
 
-from homeassistant.const import CONF_PASSWORD, CONF_USERNAME, Platform
-from homeassistant.helpers.aiohttp_client import async_get_clientsession
-from homeassistant.loader import async_get_loaded_integration
+from .coordinator import Eagle3Coordinator
 
-from .api import IntegrationBlueprintApiClient
-from .const import DOMAIN, LOGGER
-from .coordinator import BlueprintDataUpdateCoordinator
-from .data import IntegrationBlueprintData
+type Eagle3ConfigEntry = ConfigEntry[Eagle3ApiData]
 
-if TYPE_CHECKING:
-    from homeassistant.core import HomeAssistant
 
-    from .data import IntegrationBlueprintConfigEntry
-
-PLATFORMS: list[Platform] = [
+_PLATFORMS: list[Platform] = [
     Platform.SENSOR,
     Platform.BINARY_SENSOR,
-    Platform.SWITCH,
 ]
 
 
-# https://developers.home-assistant.io/docs/config_entries_index/#setting-up-an-entry
+@dataclass
+class Eagle3ApiData:
+    """Data for the Eagle3 integration."""
+
+    coordinator: Eagle3Coordinator
+
+
 async def async_setup_entry(
     hass: HomeAssistant,
-    entry: IntegrationBlueprintConfigEntry,
+    entry: Eagle3ConfigEntry,
 ) -> bool:
     """Set up this integration using UI."""
-    coordinator = BlueprintDataUpdateCoordinator(
-        hass=hass,
-        logger=LOGGER,
-        name=DOMAIN,
-        update_interval=timedelta(hours=1),
-    )
-    entry.runtime_data = IntegrationBlueprintData(
-        client=IntegrationBlueprintApiClient(
-            username=entry.data[CONF_USERNAME],
-            password=entry.data[CONF_PASSWORD],
-            session=async_get_clientsession(hass),
-        ),
-        integration=async_get_loaded_integration(hass, entry.domain),
-        coordinator=coordinator,
-    )
+    coordinator = Eagle3Coordinator(hass=hass, config_entry=entry)
 
-    # https://developers.home-assistant.io/docs/integration_fetching_data#coordinated-single-api-poll-for-data-for-all-entities
     await coordinator.async_config_entry_first_refresh()
+    if not coordinator.hub.online:
+        raise ConfigEntryNotReady
 
-    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    await hass.config_entries.async_forward_entry_setups(entry, _PLATFORMS)
     entry.async_on_unload(entry.add_update_listener(async_reload_entry))
 
     return True
@@ -64,15 +50,15 @@ async def async_setup_entry(
 
 async def async_unload_entry(
     hass: HomeAssistant,
-    entry: IntegrationBlueprintConfigEntry,
+    entry: Eagle3ConfigEntry,
 ) -> bool:
     """Handle removal of an entry."""
-    return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+    return await hass.config_entries.async_unload_platforms(entry, _PLATFORMS)
 
 
 async def async_reload_entry(
     hass: HomeAssistant,
-    entry: IntegrationBlueprintConfigEntry,
+    entry: Eagle3ConfigEntry,
 ) -> None:
     """Reload config entry."""
     await hass.config_entries.async_reload(entry.entry_id)
