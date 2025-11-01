@@ -29,6 +29,7 @@ ENTITY_DESCRIPTIONS = (
         native_unit_of_measurement=UnitOfPower.KILO_WATT,
         device_class=SensorDeviceClass.POWER,
         state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=3,
     ),
     SensorEntityDescription(
         key="zigbee:CurrentSummationDelivered",
@@ -36,6 +37,7 @@ ENTITY_DESCRIPTIONS = (
         native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
         device_class=SensorDeviceClass.ENERGY,
         state_class=SensorStateClass.TOTAL_INCREASING,
+        suggested_display_precision=2,
     ),
     SensorEntityDescription(
         key="zigbee:CurrentSummationReceived",
@@ -43,6 +45,7 @@ ENTITY_DESCRIPTIONS = (
         native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
         device_class=SensorDeviceClass.ENERGY,
         state_class=SensorStateClass.TOTAL_INCREASING,
+        suggested_display_precision=2,
     ),
 )
 
@@ -83,25 +86,41 @@ class RainforestEagle3Sensor(CoordinatorEntity, SensorEntity):
         """Initialize the sensor class."""
         super().__init__(coordinator)
         self.meter = meter
+        self.device = meter.device  # type: EagleDevice
         self.entity_description = entity_description
         self.key = entity_description.key
+
+    @callback
+    def _handle_coordinator_update(self) -> None:
+        """Update sensor with latest data from coordinator."""
+        # This method is called by your DataUpdateCoordinator when a successful update runs.
+        self.meter = self.coordinator.data.meters.get(self.meter.hardware_address, self.meter)
+        self.device = self.meter.device
+        self.async_write_ha_state()
 
     @property
     def device_info(self) -> DeviceInfo:
         """Return the device info."""
         return DeviceInfo(
-            identifiers={(DOMAIN, f"{self.coordinator.cloud_id}-{self.meter.hardware_address}")}
+            name=self.meter.device.Name,
+            identifiers={(DOMAIN, f"{self.meter.hardware_address}")},
+            manufacturer=self.device.Manufacturer,
         )
+
+    @property
+    def name(self) -> str:
+        """Return the name of the sensor."""
+        return self.meter.device.Name + " " + self.translation_key.replace("_", " ").title()  # pyright: ignore[reportOptionalMemberAccess, reportArgumentType]
 
     @property
     def available(self) -> bool:
         """Return if the sensor is available."""
-        return self.coordinator.hub.online and self.meter.device.ConnectionStatus == "Connected"
+        return self.coordinator.hub.online and self.device.ConnectionStatus == "Connected"
 
     @property
     def unique_id(self) -> str:
         """Return unique id."""
-        return slugify(f"{DOMAIN}-{self.coordinator.cloud_id}-{self.meter.hardware_address}-{self.key}")
+        return f"{self.meter.hardware_address}-{self.translation_key}".lower()
 
     @property
     def native_value(self) -> float | None:

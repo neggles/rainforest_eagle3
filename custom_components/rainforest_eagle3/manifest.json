@@ -1,6 +1,8 @@
 {
-    "domain": "rainforest_eagle3",
-    "name": "Integration blueprint",
+    "domain": "rainforest_automation",
+    "name": "Rainforest Eagle 3",
+    "after_dependencies": ["http"],
+    "integration_type": "hub",
     "codeowners": ["@neggles"],
     "config_flow": true,
     "documentation": "https://github.com/neggles/rainforest_eagle3",

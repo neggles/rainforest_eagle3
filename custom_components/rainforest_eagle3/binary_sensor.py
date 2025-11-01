@@ -15,17 +15,9 @@ from slugify import slugify
 
 from . import Eagle3ConfigEntry, Eagle3Coordinator
 from .const import DOMAIN
-from .eagle import EagleDevice, ElectricityMeter
+from .eagle import ElectricityMeter
 
 _LOGGER = logging.getLogger(__name__)
-
-ENTITY_DESCRIPTIONS = (
-    BinarySensorEntityDescription(
-        key="rainforest_eagle3",
-        name="Integration Eagle3 Binary Sensor",
-        device_class=BinarySensorDeviceClass.CONNECTIVITY,
-    ),
-)
 
 
 async def async_setup_entry(
@@ -53,9 +45,21 @@ class EagleDeviceConnectivitySensor(CoordinatorEntity, BinarySensorEntity):
         coordinator: Eagle3Coordinator,
         meter: ElectricityMeter,
     ) -> None:
-        """Initialize the binary_sensor class."""
+        """Initialize the device connectivity sensor."""
         super().__init__(coordinator)
         self.meter = meter
+        self.device = meter.device
+        self.entity_description = BinarySensorEntityDescription(
+            key="connectivity", translation_key="device_connectivity"
+        )
+
+    @callback
+    def _handle_coordinator_update(self) -> None:
+        """Update sensor with latest data from coordinator."""
+        # This method is called by your DataUpdateCoordinator when a successful update runs.
+        self.meter = self.coordinator.hub.meters.get(self.meter.hardware_address, self.meter)
+        self.device = self.meter.device
+        self.async_write_ha_state()
 
     @property
     def device_class(self) -> BinarySensorDeviceClass:
@@ -66,13 +70,19 @@ class EagleDeviceConnectivitySensor(CoordinatorEntity, BinarySensorEntity):
     def device_info(self) -> DeviceInfo:
         """Return the device info."""
         return DeviceInfo(
-            identifiers={(DOMAIN, f"{self.coordinator.cloud_id}-{self.meter.hardware_address}")}
+            name=self.meter.device.Name,
+            identifiers={(DOMAIN, f"{self.meter.hardware_address}")},
         )
 
     @property
     def name(self) -> str:
         """Return the name of the sensor."""
-        return self.meter.device.Name + " Connectivity"
+        return self.meter.device.Name + " " + slugify(self.device_class, separator=" ").title()
+
+    @property
+    def available(self) -> bool:
+        """Return if the sensor is available."""
+        return self.coordinator.hub.online and self.meter in self.coordinator.data.meters.values()
 
     @property
     def is_on(self) -> bool:
@@ -84,7 +94,7 @@ class EagleDeviceConnectivitySensor(CoordinatorEntity, BinarySensorEntity):
         """Return unique id."""
         # All entities must have a unique id.  Think carefully what you want this to be as
         # changing it later will cause HA to create new entities.
-        return f"{DOMAIN}-{self.meter.hardware_address}-connectivity"
+        return f"{self.meter.hardware_address}-{slugify(self.device_class)}"
 
     @property
     def extra_state_attributes(self) -> dict[str, str | None]:

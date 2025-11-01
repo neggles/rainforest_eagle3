@@ -57,10 +57,14 @@ class EagleHub:
                 response_text = await response.text()
                 response.raise_for_status()
             except Exception as e:
-                self.online = False
+                if self.online is True:
+                    self.online = False
+                    _LOGGER.exception("Eagle Hub at %s is offline", self.hostname)
                 raise e  # noqa: TRY201
             else:
-                self.online = True
+                if self.online is False:
+                    self.online = True
+                    _LOGGER.info("Eagle Hub at %s is online", self.hostname)
                 return xml_parse(response_text)
 
     async def async_execute_command(self, command: dict | str) -> dict:
@@ -70,7 +74,6 @@ class EagleHub:
         if "Command" not in command:
             command = {"Command": command}
         command_xml = xml_unparse(command)
-        _LOGGER.debug("Executing Eagle command", extra={"command": command, "command_xml": command_xml})
         return await self._post(command_xml)
 
     async def async_get_device_list(self) -> list[EagleDevice]:
@@ -79,23 +82,7 @@ class EagleHub:
         devices = get_ensure_list(response, "DeviceList")
         return [EagleDevice.model_validate(device) for device in devices]
 
-    async def async_refresh_devices(self) -> None:
-        """Refresh the list of devices from the Eagle."""
-        try:
-            devices = await self.async_get_device_list()
-            for device in devices:
-                if device.ModelId == "electric_meter":
-                    _LOGGER.debug("Found Eagle energy meter device", extra={"device": device})
-                    meter = ElectricityMeter(hub=self, device=device)
-                    await meter.refresh()
-                    self.meters[meter.hardware_address] = meter
-            self.devices = devices
-            _LOGGER.debug("Eagle devices refreshed", extra={"devices": devices})
-        except TimeoutError as e:
-            msg = f"Timeout connecting to Eagle Hub at {self.hostname}"
-            raise TimeoutError(msg) from e
-
-    async def device_details(self, device: EagleDevice) -> DeviceDetailsResponse:
+    async def async_get_device_details(self, device: EagleDevice) -> DeviceDetailsResponse:
         """Get details for a specific device."""
         command = device_command(device, EagleApiCommand.DEVICE_DETAILS)
         response = await self.async_execute_command(command)
@@ -130,3 +117,21 @@ class EagleHub:
                 _LOGGER.exception(msg)
                 continue
         return data
+
+    async def async_refresh_devices(self) -> None:
+        """Refresh the list of devices from the Eagle."""
+        try:
+            devices = await self.async_get_device_list()
+            for device in devices:
+                if device.ModelId == "electric_meter":
+                    if device.HardwareAddress in self.meters:
+                        meter = self.meters[device.HardwareAddress]
+                    else:
+                        _LOGGER.info("Discovered new Eagle energy meter", extra={"device": device})
+                        meter = ElectricityMeter(hub=self, device=device)
+                    await meter.refresh()
+                    self.meters[device.HardwareAddress] = meter
+            self.devices = devices
+        except TimeoutError as e:
+            msg = f"Timeout connecting to Eagle Hub at {self.hostname}"
+            raise TimeoutError(msg) from e

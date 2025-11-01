@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Any
 import async_timeout
 from homeassistant.const import CONF_HOST, CONF_SCAN_INTERVAL
 from homeassistant.exceptions import ConfigEntryAuthFailed
-from homeassistant.helpers.aiohttp_client import async_create_clientsession
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .const import CONF_CLOUD_ID, CONF_INSTALL_CODE, DEFAULT_SCAN_INTERVAL, DOMAIN
@@ -50,13 +50,14 @@ class Eagle3Coordinator(DataUpdateCoordinator):
             name=f"{DOMAIN} ({config_entry.unique_id})",
             config_entry=config_entry,
             update_interval=timedelta(seconds=self.poll_interval),
+            update_method=self.async_update_data,
         )
 
         self.hub = EagleHub(
             hostname=self.host,
             cloud_id=self.cloud_id,
             install_code=self.install_code,
-            session=async_create_clientsession(hass=hass),
+            session=async_get_clientsession(hass=hass),
         )
 
     async def _async_setup(self) -> None:
@@ -68,12 +69,13 @@ class Eagle3Coordinator(DataUpdateCoordinator):
             msg = "Failed to connect to Eagle Hub"
             raise ConfigEntryAuthFailed(msg) from e
 
-    async def _async_update_data(self) -> Any:
+    async def async_update_data(self) -> Any:
         """Update data via library."""
         try:
-            await self.hub.async_refresh_devices()
-            devices = self.hub.devices
-            meters = self.hub.meters
+            async with async_timeout.timeout(10):
+                await self.hub.async_refresh_devices()
+                devices = self.hub.devices
+                meters = self.hub.meters
         except Exception as err:
             msg = "Error communicating with API"
             _LOGGER.exception(msg)
@@ -82,7 +84,7 @@ class Eagle3Coordinator(DataUpdateCoordinator):
 
     def get_device_by_hardware_address(self, hardware_address: str) -> EagleDevice | None:
         """Get device by hardware address."""
-        for device in self.data.devices:
+        for device in self.hub.devices:
             if device.HardwareAddress == hardware_address:
                 return device
         return None

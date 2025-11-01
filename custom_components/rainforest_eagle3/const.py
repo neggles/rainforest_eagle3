@@ -2,7 +2,7 @@
 
 from typing import Final
 
-DOMAIN = "rainforest_eagle3"
+DOMAIN = "rainforest_automation"
 
 MIN_SCAN_INTERVAL: Final = 5  # seconds
 DEFAULT_SCAN_INTERVAL: Final = 30  # seconds

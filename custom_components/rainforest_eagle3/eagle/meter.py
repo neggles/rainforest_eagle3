@@ -66,8 +66,6 @@ class ElectricityMeter:
         for component in self.components:
             for variable in component.Variables:
                 if isinstance(variable, Variable) and variable.Name == key:
-                    with suppress(ValueError, TypeError):
-                        variable.Value = int(variable.Value) if variable.Value is not None else None
                     return variable
         msg = f"Variable {key} not found in meter {self.hardware_address}"
         raise KeyError(msg)

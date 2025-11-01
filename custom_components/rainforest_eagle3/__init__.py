@@ -6,7 +6,6 @@ https://github.com/neggles/rainforest_eagle3
 """
 
 from dataclasses import dataclass
-import logging
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
@@ -42,8 +41,9 @@ async def async_setup_entry(
     if not coordinator.hub.online:
         raise ConfigEntryNotReady
 
+    entry.runtime_data = Eagle3ApiData(coordinator=coordinator)
+
     await hass.config_entries.async_forward_entry_setups(entry, _PLATFORMS)
-    entry.async_on_unload(entry.add_update_listener(async_reload_entry))
 
     return True
 

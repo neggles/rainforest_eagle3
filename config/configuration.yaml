@@ -9,4 +9,8 @@ homeassistant:
 logger:
   default: info
   logs:
-    custom_components.integration_blueprint: debug
+    custom_components.rainforest_eagle3: debug
+    custom_components.rainforest_automation: debug
+
+bluetooth:
+   enable: false

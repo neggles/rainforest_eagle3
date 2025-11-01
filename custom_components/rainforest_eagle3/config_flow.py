@@ -8,7 +8,7 @@ from homeassistant.config_entries import (
     ConfigEntry,
     ConfigFlow,
     ConfigFlowResult,
-    OptionsFlow,
+    OptionsFlowWithReload,
 )
 from homeassistant.const import CONF_HOST, CONF_SCAN_INTERVAL
 from homeassistant.core import HomeAssistant, callback
@@ -19,7 +19,7 @@ import voluptuous as vol
 
 from rainforest_eagle3.eagle.hub import EagleHub
 
-from .const import CONF_CLOUD_ID, CONF_INSTALL_CODE, DEFAULT_SCAN_INTERVAL, DOMAIN, MIN_SCAN_INTERVAL
+from .const import CONF_CLOUD_ID, CONF_INSTALL_CODE, DOMAIN, MIN_SCAN_INTERVAL
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -37,6 +37,16 @@ STEP_USER_DATA_SCHEMA = vol.Schema(
     },
 )
 
+OPTIONS_SCHEMA = vol.Schema(
+    {
+        vol.Required(CONF_SCAN_INTERVAL): selector.NumberSelector(
+            selector.NumberSelectorConfig(
+                min=MIN_SCAN_INTERVAL, max=60, step=1, unit_of_measurement="seconds"
+            )
+        ),
+    }
+)
+
 
 async def validate_input(
     hass: HomeAssistant,
@@ -52,7 +62,7 @@ async def validate_input(
         session=async_get_clientsession(hass),
     )
     await client.async_refresh_devices()
-    title = f"Eagle3 {cloud_id}"
+    title = f"{hostname.split('.')[0]} ({cloud_id})"
     return {"title": title, "unique_id": slugify(title)}
 
 
@@ -65,9 +75,11 @@ class Eagle3ConfigFlowHandler(ConfigFlow, domain=DOMAIN):
 
     @staticmethod
     @callback
-    def async_get_options_flow(config_entry: ConfigEntry) -> OptionsFlow:
+    def async_get_options_flow(
+        config_entry: ConfigEntry,  # noqa: ARG004
+    ) -> OptionsFlowWithReload:
         """Get the options flow for this handler."""
-        return Eagle3OptionsFlowHandler(config_entry)
+        return Eagle3OptionsFlowHandler()
 
     async def async_step_user(self, user_input: dict | None = None) -> ConfigFlowResult:
         """Handle the initial step."""
@@ -91,30 +103,15 @@ class Eagle3ConfigFlowHandler(ConfigFlow, domain=DOMAIN):
         return self.async_show_form(step_id="user", data_schema=STEP_USER_DATA_SCHEMA, errors=_errors)
 
 
-class Eagle3OptionsFlowHandler(OptionsFlow):
+class Eagle3OptionsFlowHandler(OptionsFlowWithReload):
     """Config flow to handle options."""
 
-    def __init__(self, config_entry: ConfigEntry) -> None:
-        """Initialize options flow."""
-        self.config_entry = config_entry
-        self.options = dict(config_entry.options)
-
-    async def async_step_init(self, user_input: dict | None = None) -> ConfigFlowResult:
+    async def async_step_init(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         """Manage the Eagle3 options."""
         if user_input is not None:
-            return self.async_create_entry(title="", data=user_input)
+            return self.async_create_entry(data=user_input)
 
-        options_schema = vol.Schema(
-            {
-                vol.Required(
-                    CONF_SCAN_INTERVAL,
-                    default=self.options.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL),
-                ): selector.NumberSelector(
-                    selector.NumberSelectorConfig(
-                        min=MIN_SCAN_INTERVAL, max=300, step=1, unit_of_measurement="seconds"
-                    )
-                ),
-            }
+        return self.async_show_form(
+            step_id="init",
+            data_schema=self.add_suggested_values_to_schema(OPTIONS_SCHEMA, self.config_entry.options),
         )
-
-        return self.async_show_form(step_id="init", data_schema=options_schema)

@@ -13,10 +13,20 @@ if [[ ! -d "${repo_root}/config" ]]; then
 fi
 
 # Set the path to custom_components
-## This let's us have the structure we want <root>/custom_components/solis_inverter
+## This let's us have the structure we want <root>/custom_components/rainforest_eagle3
 ## while at the same time have Home Assistant configuration inside <root>/config
 ## without resulting to symlinks.
-#export PYTHONPATH="${PYTHONPATH}:${repo_root}/custom_components"
+# if [[ -z "${PYTHONPATH:-}" ]]; then
+#     export PYTHONPATH="${repo_root}/custom_components"
+# else
+#     export PYTHONPATH="${PYTHONPATH}:${repo_root}/custom_components"
+# fi
+
+# symlink
+if [[ ! -L "${repo_root}/config/custom_components/rainforest_eagle3" ]]; then
+    mkdir -p "${repo_root}/config/custom_components"
+    ln -sf "${repo_root}/custom_components/rainforest_eagle3" "${repo_root}/config/custom_components/rainforest_eagle3"
+fi
 
 # Start Home Assistant
-hass --config "${repo_root}/config" --debug
+exec hass --config "${repo_root}/config" --debug

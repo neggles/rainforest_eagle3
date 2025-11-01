@@ -33,13 +33,12 @@ class Variable(BaseModel):
         value = values.get("Value")
         if isinstance(value, str) and value.lower() in {"true", "false"}:
             with suppress(ValueError, TypeError):
-                value = bool(value)
-        if isinstance(value, str):
-            with suppress(ValueError, TypeError):
-                value = int(value)
+                values["Value"] = bool(value)
         if isinstance(value, str):
             with suppress(ValueError, TypeError):
                 value = float(value)
+                values["Value"] = int(value) if value.is_integer() else value
+
         values["Value"] = value
         return values
 
