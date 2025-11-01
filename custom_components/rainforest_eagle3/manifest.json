@@ -1,0 +1,10 @@
+{
+    "domain": "integration_blueprint",
+    "name": "Integration blueprint",
+    "codeowners": ["@ludeeus"],
+    "config_flow": true,
+    "documentation": "https://github.com/neggles/rainforest_eagle3",
+    "iot_class": "cloud_polling",
+    "issue_tracker": "https://github.com/neggles/rainforest_eagle3/issues",
+    "version": "0.1.0"
+}

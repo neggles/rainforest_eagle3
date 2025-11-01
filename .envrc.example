@@ -1,0 +1,6 @@
+export VIRTUAL_ENV=$(expand_path ./.venv/)
+if has uv; then
+    layout python $(uv python find 3.13)
+else
+    layout python python3.13
+fi

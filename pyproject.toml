@@ -1,0 +1,68 @@
+[project]
+name = "rainforest_eagle3"
+description = "A Home Assistant custom component for Rainforest Eagle 3 energy monitors"
+readme = "README.md"
+requires-python = ">=3.13"
+version = "0.1.0"
+dependencies = [
+    "colorlog>=6.9.0",
+    "homeassistant>=2025.10.0",
+    "aiohttp>=3.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "ruff>=0.14.0",
+    "uv>=0.8.0",
+]
+
+[build-system]
+requires = ["uv_build>=0.9.0,<0.10.0"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-name = "rainforest_eagle3"
+module-root = "custom_components"
+
+[tool.uv]
+cache-keys = [
+    { file = "pyproject.toml" },
+    { file = "hacs.json" },
+    { git = { commit = true, tags = true } },
+]
+
+[tool.ruff]
+target-version = "py313"
+required-version = ">=0.14.0"
+line-length = 110
+
+[tool.ruff.lint]
+select = [
+    "ALL",
+]
+ignore = [
+    "ANN401", # Dynamically typed expressions (typing.Any) are disallowed
+    "D203",   # no-blank-line-before-class (incompatible with formatter)
+    "D212",   # multi-line-summary-first-line (incompatible with formatter)
+    "COM812", # incompatible with formatter
+    "ISC001", # incompatible with formatter
+]
+
+[tool.ruff.lint.flake8-pytest-style]
+fixture-parentheses = false
+
+[tool.ruff.lint.pyupgrade]
+keep-runtime-typing = true
+
+[tool.ruff.lint.isort]
+force-sort-within-sections = true
+known-first-party = ["rainforest_eagle3"]
+combine-as-imports = true
+split-on-trailing-comma = false
+
+[tool.ruff.lint.mccabe]
+max-complexity = 25
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+property-decorators = ["propcache.api.cached_property"]
