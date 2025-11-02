@@ -14,15 +14,21 @@ jobs:
   ruff:
     name: "Ruff"
     runs-on: "ubuntu-latest"
+    env:
+      UV_SYSTEM_PYTHON: 1
     steps:
       - name: Checkout the repository
         uses: actions/checkout@v5
 
+      - name: "Set up Python"
+        uses: actions/setup-python@v6
+        with:
+          python-version-file: ".python-version"
+
       - name: Install uv
         uses: astral-sh/setup-uv@v6
-
-      - name: Set up Python
-        run: uv python install
+        with:
+          enable-cache: true
 
       - name: Install requirements
         run: uv pip install --editable '.[dev]'
