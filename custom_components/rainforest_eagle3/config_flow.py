@@ -5,15 +5,7 @@ from functools import partial
 import logging
 from typing import Any
 
-from aiohttp import BasicAuth, ClientSession
-from aiohttp.typedefs import LooseHeaders
-from homeassistant.config_entries import (
-    CONN_CLASS_LOCAL_POLL,
-    ConfigEntry,
-    ConfigFlow,
-    ConfigFlowResult,
-    OptionsFlowWithReload,
-)
+from homeassistant.config_entries import CONN_CLASS_LOCAL_POLL, ConfigEntry, ConfigFlow, ConfigFlowResult
 from homeassistant.const import CONF_HOST, CONF_SCAN_INTERVAL
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import selector

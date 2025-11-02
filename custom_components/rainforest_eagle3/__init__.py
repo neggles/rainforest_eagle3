@@ -10,11 +10,10 @@ from dataclasses import dataclass
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.aiohttp_client import async_create_clientsession
 
 from .const import DOMAIN  # noqa: F401
 from .coordinator import Eagle3Coordinator
-from .eagle import EagleHub
+from .eagle import EagleHub as EagleHub
 
 type Eagle3ConfigEntry = ConfigEntry[Eagle3ApiData]
 
