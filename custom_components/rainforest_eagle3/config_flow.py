@@ -1,7 +1,6 @@
 """Adds config flow for Eagle3."""
 
 import asyncio
-from functools import partial
 import logging
 from typing import Any
 
@@ -9,7 +8,6 @@ from homeassistant.config_entries import CONN_CLASS_LOCAL_POLL, ConfigEntry, Con
 from homeassistant.const import CONF_HOST, CONF_SCAN_INTERVAL
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import selector
-from homeassistant.helpers.aiohttp_client import async_create_clientsession
 from homeassistant.helpers.schema_config_entry_flow import (
     SchemaFlowFormStep,
     SchemaOptionsFlowHandlerWithReload,
@@ -50,28 +48,25 @@ OPTIONS_FLOW = {
 
 
 async def validate_input(
-    hass: HomeAssistant,
+    hass: HomeAssistant,  # noqa: ARG001 Unused function argument: `hass`
     hostname: str,
     cloud_id: str,
     install_code: str,
 ) -> dict[str, str]:
     """Validate credentials."""
-    session_callback = partial(async_create_clientsession, hass=hass)
-
-    client = EagleHub(
-        session_callback=session_callback,
-        hostname=hostname,
-        cloud_id=cloud_id,
-        install_code=install_code,
-    )
-    await client.async_refresh_devices()
-    if not client.online:
+    # make client
+    hub = EagleHub(hostname=hostname, cloud_id=cloud_id, install_code=install_code)
+    # refresh devices
+    await hub.async_refresh_devices()
+    # check online
+    if not hub.online:
         msg = "Unable to connect to Eagle Hub"
         raise ConnectionError(msg)
-
-    title = f"{hostname.split('.')[0]} ({cloud_id})"
-    unique_id = cloud_id.lower() + "-" + install_code[-4:]
-    return {"title": title, "unique_id": unique_id}
+    hub.session.detach()
+    return {
+        "title": f"{hostname.split('.')[0]} ({cloud_id})",
+        "unique_id": f"{cloud_id.lower()}-{install_code[-4:]}",
+    }
 
 
 class Eagle3ConfigFlowHandler(ConfigFlow, domain=DOMAIN):

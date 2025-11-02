@@ -32,9 +32,9 @@ class EagleHub:
 
     def __init__(
         self,
-        session_callback: Callable[..., ClientSession],
         cloud_id: str,
         install_code: str,
+        session_callback: Callable[..., ClientSession] | None = None,
         hostname: str | None = None,
     ) -> None:
         """Initialize the EagleHub."""
