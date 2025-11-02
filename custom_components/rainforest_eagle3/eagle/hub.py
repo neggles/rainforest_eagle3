@@ -81,6 +81,8 @@ class EagleHub:
 
     async def async_execute_command(self, command: dict | str) -> dict:
         """Execute command on device."""
+        if isinstance(command, EagleApiCommand):
+            command = command.value
         if isinstance(command, str):
             command = {"Command": {"Name": command}}
         if not isinstance(command, dict):

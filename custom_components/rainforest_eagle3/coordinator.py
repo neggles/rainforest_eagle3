@@ -58,7 +58,6 @@ class Eagle3Coordinator(DataUpdateCoordinator):
             update_interval=timedelta(seconds=self.poll_interval),
             request_refresh_debouncer=Debouncer(hass, _LOGGER, cooldown=MIN_SCAN_INTERVAL, immediate=True),
         )
-
         session_callback = partial(async_create_clientsession, hass=hass)
         self.hub = EagleHub(
             session_callback=session_callback,

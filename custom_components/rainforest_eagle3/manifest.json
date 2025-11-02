@@ -8,6 +8,6 @@
   "integration_type": "hub",
   "iot_class": "local_polling",
   "issue_tracker": "https://github.com/neggles/rainforest_eagle3/issues",
-  "requirements": ["pydantic==2.11.9"],
+  "requirements": ["pydantic==2.11.9", "xmltodict==1.0.2"],
   "version": "0.1.1"
 }

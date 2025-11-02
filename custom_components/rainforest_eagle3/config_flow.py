@@ -62,7 +62,7 @@ async def validate_input(
     if not hub.online:
         msg = "Unable to connect to Eagle Hub"
         raise ConnectionError(msg)
-    hub.session.detach()
+    await hub.session.close()
     return {
         "title": f"{hostname.split('.')[0]} ({cloud_id})",
         "unique_id": f"{cloud_id.lower()}-{install_code[-4:]}",
