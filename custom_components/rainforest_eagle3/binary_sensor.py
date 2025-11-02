@@ -83,8 +83,8 @@ class Eagle3DeviceBinarySensor(CoordinatorEntity, BinarySensorEntity):
     def device_info(self) -> DeviceInfo:
         """Return the device info."""
         return DeviceInfo(
-            name=self.meter.device.Name,
-            identifiers={(DOMAIN, f"{self.meter.address}")},
+            name=self.device.Name,
+            identifiers={(DOMAIN, f"{self.device.HardwareAddress}")},
         )
 
     @property
