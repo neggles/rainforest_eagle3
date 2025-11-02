@@ -49,6 +49,7 @@ ignore = [
     "FBT001", # I will use positional bools and you can't stop me
     "FBT002", # I will use positional bools and you can't stop me
     "T20" , # no you cannot take print away from me either wtf
+    "RUF100", # dont tell me about disabled noqa directives
 ]
 
 [tool.ruff.lint.flake8-pytest-style]

@@ -1,12 +1,13 @@
 """Eagle API client hub module."""
 
+from collections.abc import Callable
 import logging
 
 from aiohttp import BasicAuth, ClientSession
 from xmltodict import parse as xml_parse, unparse as xml_unparse
 
 from .meter import ElectricityMeter
-from .model import DeviceDetailsResponse, DeviceQueryResponse, EagleApiCommand, EagleDevice
+from .model import DeviceQueryResponse, EagleApiCommand, EagleDevice
 from .util import get_ensure_list
 
 _LOGGER = logging.getLogger(__name__)
@@ -31,28 +32,39 @@ class EagleHub:
 
     def __init__(
         self,
-        session: ClientSession,
+        session_callback: Callable[..., ClientSession],
         cloud_id: str,
         install_code: str,
         hostname: str | None = None,
     ) -> None:
         """Initialize the EagleHub."""
-        self.session = session
         self.cloud_id = cloud_id.lower()
         self.install_code = install_code
         self.hostname = hostname or f"eagle-{self.cloud_id}"
-
-        self.headers = {"Content-Type": "text/xml"}
+        self.headers = {"Content-Type": "text/xml", "User-Agent": "RainforestEagle3Client/1.0"}
         self.auth = BasicAuth(cloud_id, install_code)
+        if session_callback is None:
+            session_callback = ClientSession
+        self.session = session_callback(headers=self.headers, auth=self.auth)
 
-        self.devices: list[EagleDevice] = []
+        self.devices: dict[str, EagleDevice] = {}
         self.meters: dict[str, ElectricityMeter] = {}
         self.online = False
+
+    @property
+    def device_list(self) -> list[EagleDevice]:
+        """Return the set of known devices."""
+        return list(self.devices.values())
+
+    async def close(self) -> None:
+        """Close the client session."""
+        self.online = False
+        return await self.session.close()
 
     async def _post(self, content_xml: str) -> dict:
         """Send POST request to device."""
         url = f"http://{self.hostname}/cgi-bin/post_manager"
-        async with self.session.post(url, auth=self.auth, headers=self.headers, data=content_xml) as response:
+        async with self.session.post(url, data=content_xml) as response:
             try:
                 response_text = await response.text()
                 response.raise_for_status()
@@ -71,29 +83,23 @@ class EagleHub:
         """Execute command on device."""
         if isinstance(command, str):
             command = {"Command": {"Name": command}}
+        if not isinstance(command, dict):
+            msg = "Command must be a dict or str"
+            raise TypeError(msg)
         if "Command" not in command:
             command = {"Command": command}
         command_xml = xml_unparse(command)
         return await self._post(command_xml)
 
-    async def async_get_device_list(self) -> list[EagleDevice]:
+    async def _async_get_device_list(self) -> list[EagleDevice]:
         """Get device list from Eagle."""
         response = await self.async_execute_command(EagleApiCommand.DEVICE_LIST)
         devices = get_ensure_list(response, "DeviceList")
-        return [EagleDevice.model_validate(device) for device in devices]
-
-    async def async_get_device_details(self, device: EagleDevice) -> DeviceDetailsResponse:
-        """Get details for a specific device."""
-        command = device_command(device, EagleApiCommand.DEVICE_DETAILS)
-        response = await self.async_execute_command(command)
-        details = response.get("Device", response)
-        return DeviceDetailsResponse.model_validate(details)
+        return [EagleDevice.model_validate(x) for x in devices]
 
     async def async_query_device(
-        self,
-        device: EagleDevice,
-        variables: list[str] | None = None,
-    ) -> DeviceQueryResponse:
+        self, device: EagleDevice, variables: list[str] | None = None
+    ) -> EagleDevice:
         """Get data from a specific device."""
         if variables is None:
             component = {"All": "Y"}
@@ -103,35 +109,50 @@ class EagleHub:
             }
         command = device_command(device, EagleApiCommand.DEVICE_QUERY, extra={"Components": component})
         response = await self.async_execute_command(command)
-        details = response.get("Device", response)
-        return DeviceQueryResponse.model_validate(details)
+        response = DeviceQueryResponse.model_validate(response.get("Device", response))
+        return response.to_device()
 
-    async def async_query_all_devices(self) -> dict[str, DeviceQueryResponse]:
-        """Get data from all devices."""
-        data = {}
-        for device in self.devices:
-            try:
-                data[device.HardwareAddress] = await self.async_query_device(device)
-            except Exception:
-                msg = f"Failed to query device {device.HardwareAddress}"
-                _LOGGER.exception(msg)
-                continue
-        return data
+    async def async_refresh_device(self, device: EagleDevice | str) -> None:
+        """Update a specific device."""
+        hw_address: str = device.HardwareAddress if isinstance(device, EagleDevice) else device
+        if hw_address in self.devices:
+            device = await self.async_query_device(self.devices[hw_address])
+            self.devices[hw_address] = device
 
-    async def async_refresh_devices(self) -> None:
+    async def async_refresh_devices(self, devices: list[EagleDevice] | None = None) -> None:
         """Refresh the list of devices from the Eagle."""
         try:
-            devices = await self.async_get_device_list()
+            if devices is None:
+                devices = await self._async_get_device_list()
             for device in devices:
+                self.devices[device.HardwareAddress] = await self.async_query_device(device)
                 if device.ModelId == "electric_meter":
-                    if device.HardwareAddress in self.meters:
-                        meter = self.meters[device.HardwareAddress]
+                    if device.HardwareAddress not in self.meters:
+                        self.meters[device.HardwareAddress] = ElectricityMeter(
+                            hub=self, address=device.HardwareAddress
+                        )
+                        _LOGGER.info(
+                            "Discovered new energy meter name=%s addr=%s",
+                            device.Name,
+                            device.HardwareAddress,
+                        )
                     else:
-                        _LOGGER.info("Discovered new Eagle energy meter", extra={"device": device})
-                        meter = ElectricityMeter(hub=self, device=device)
-                    await meter.refresh()
-                    self.meters[device.HardwareAddress] = meter
-            self.devices = devices
+                        _LOGGER.debug(
+                            "Refreshed energy meter '%s' at '%s'",
+                            device.Name,
+                            device.HardwareAddress,
+                        )
+                else:
+                    _LOGGER.debug(
+                        "Refreshed unknown device '%s' at '%s' (model=%s)",
+                        device.Name,
+                        device.HardwareAddress,
+                        device.ModelId,
+                    )
+
         except TimeoutError as e:
             msg = f"Timeout connecting to Eagle Hub at {self.hostname}"
             raise TimeoutError(msg) from e
+        except Exception as e:
+            msg = f"Error connecting to Eagle Hub at {self.hostname}"
+            raise ConnectionError(msg) from e

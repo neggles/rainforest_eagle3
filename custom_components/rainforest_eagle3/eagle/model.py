@@ -48,7 +48,7 @@ class Component(BaseModel):
 
     Name: str
     FixedId: str
-    Variables: list[Variable | str]
+    Variables: list[str | Variable]
 
     @model_validator(mode="before")
     @classmethod
@@ -77,6 +77,8 @@ class EagleDevice(BaseModel):
     ConnectionStatus: str | None = None
     NetworkAddress: str | None = None
 
+    Components: list[Component] | None = None
+
     @model_validator(mode="before")
     @classmethod
     def unwrap_outer_dict(cls, data: dict) -> dict:
@@ -97,6 +99,16 @@ class EagleDevice(BaseModel):
         except (ValueError, TypeError):
             return None
 
+    @classmethod
+    def from_device_details(cls, details: "DeviceDetailsResponse") -> "EagleDevice":
+        """Create EagleDevice from DeviceDetailsResponse."""
+        return cls.model_validate({**details.DeviceDetails.model_dump(), "Components": details.Components})
+
+    @classmethod
+    def from_device_query(cls, details: "DeviceQueryResponse") -> "EagleDevice":
+        """Create EagleDevice from DeviceQueryResponse."""
+        return cls.model_validate({**details.DeviceDetails.model_dump(), "Components": details.Components})
+
 
 class DeviceDetailsResponse(BaseModel):
     """Eagle API Device Details model."""
@@ -106,13 +118,17 @@ class DeviceDetailsResponse(BaseModel):
 
     @field_validator("Components", mode="before")
     @classmethod
-    def ensure_components_list(cls, value: dict | list) -> list[Component]:
+    def ensure_components_list(cls, value: dict | list) -> list:
         """Ensure Components is a list."""
         if isinstance(value, list):
             return value
         if isinstance(value, dict) and "Component" in value:
             value = value["Component"]
         return value if isinstance(value, list) else [value]  # pyright: ignore[reportReturnType] #
+
+    def to_device(self) -> EagleDevice:
+        """Convert to EagleDevice."""
+        return EagleDevice.from_device_details(self)
 
 
 class DeviceQueryResponse(BaseModel):
@@ -131,18 +147,6 @@ class DeviceQueryResponse(BaseModel):
             value = value["Component"]
         return value if isinstance(value, list) else [value]  # pyright: ignore[reportReturnType] #
 
-
-class DeviceResponse(EagleDevice):
-    """Eagle API Device Query response model."""
-
-    Components: list[Component] | None = None
-
-    @field_validator("Components", mode="before")
-    @classmethod
-    def ensure_components_list(cls, value: dict | list) -> list[Component]:
-        """Ensure Components is a list."""
-        if isinstance(value, list):
-            return value
-        if isinstance(value, dict) and "Component" in value:
-            value = value["Component"]
-        return value if isinstance(value, list) else [value]  # pyright: ignore[reportReturnType] #
+    def to_device(self) -> EagleDevice:
+        """Convert to EagleDevice."""
+        return EagleDevice.from_device_query(self)

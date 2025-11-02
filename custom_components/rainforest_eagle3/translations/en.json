@@ -4,14 +4,15 @@
             "user": {
                 "description": "If you need help with the configuration have a look here: https://github.com/neggles/rainforest_eagle3",
                 "data": {
-                    "username": "Username",
-                    "password": "Password"
+                    "host": "Hostname or IP address",
+                    "cloud_id": "Cloud ID",
+                    "install_code": "Install Code"
                 }
             }
         },
         "error": {
-            "auth": "Username/Password is wrong.",
-            "connection": "Unable to connect to the server.",
+            "auth": "Cloud ID/Install Code is wrong.",
+            "connection": "Unable to connect to the host.",
             "unknown": "Unknown error occurred."
         },
         "abort": {

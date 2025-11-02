@@ -1,6 +1,6 @@
 """Utility functions for Eagle API client."""
 
-from collections.abc import Mapping, Sequence
+from collections.abc import Mapping
 from datetime import UTC, datetime
 import logging
 from socket import gaierror, gethostbyname_ex
@@ -17,7 +17,7 @@ def parse_hex_timestamp(value: str) -> datetime | None:
         return None
 
 
-def get_ensure_list(value: list | dict[str, list | dict], key: str) -> Sequence:
+def get_ensure_list(value: list | dict[str, list | dict], key: str) -> list:
     """Ensure value is a list."""
     if value is None:
         return []

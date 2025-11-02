@@ -10,9 +10,11 @@ from dataclasses import dataclass
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
-from homeassistant.exceptions import ConfigEntryNotReady
+from homeassistant.helpers.aiohttp_client import async_create_clientsession
 
+from .const import DOMAIN  # noqa: F401
 from .coordinator import Eagle3Coordinator
+from .eagle import EagleHub
 
 type Eagle3ConfigEntry = ConfigEntry[Eagle3ApiData]
 
@@ -38,8 +40,6 @@ async def async_setup_entry(
     coordinator = Eagle3Coordinator(hass=hass, config_entry=entry)
 
     await coordinator.async_config_entry_first_refresh()
-    if not coordinator.hub.online:
-        raise ConfigEntryNotReady
 
     entry.runtime_data = Eagle3ApiData(coordinator=coordinator)
 

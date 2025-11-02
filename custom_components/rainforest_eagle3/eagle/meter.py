@@ -1,10 +1,9 @@
 """Eagle API meter device."""
 
-from contextlib import suppress
 from enum import Enum
 from typing import TYPE_CHECKING
 
-from .model import DeviceQueryResponse, EagleDevice, Variable
+from .model import Component, EagleDevice, Variable
 
 if TYPE_CHECKING:
     from datetime import datetime
@@ -26,40 +25,35 @@ class ElectricityMeter:
     def __init__(
         self,
         hub: "EagleHub",
-        device: "EagleDevice",
+        address: str,
     ) -> None:
         """Initialize the ElectricityMeter."""
-        if device.ModelId != "electric_meter":
-            msg = "EagleDevice is not an electricity meter"
-            raise ValueError(msg)
-
         self.hub = hub
-        self.device = device
-        self.components = []
+        self.address = address
 
     @property
-    def hardware_address(self) -> str:
-        """Return the hardware address of the meter."""
-        return self.device.HardwareAddress
+    def device(self) -> EagleDevice:
+        """Return the underlying EagleDevice."""
+        return self.hub.devices[self.address]
 
     @property
     def last_contact(self) -> "datetime | None":
         """Return the last contact time of the meter."""
         return self.device.LastContact
 
-    async def refresh(self) -> None:
-        """Refresh the meter data from the Eagle."""
-        response: DeviceQueryResponse = await self.hub.async_query_device(self.device)
-        details = response.DeviceDetails
-        # lastcontact and these other fields will be none for a DeviceDetails query,
-        # but not a DeviceQuery one. for. some reason.
-        if details.LastContact is not None:
-            self.device.ConnectionStatus = details.ConnectionStatus
-            self.device.LastContact = details.LastContact
-            self.device.NetworkAddress = details.NetworkAddress
+    @property
+    def connection_status(self) -> str:
+        """Return the connection status of the meter."""
+        return self.device.ConnectionStatus or "Unknown"
 
-        if response.Components:
-            self.components = response.Components
+    @property
+    def components(self) -> list[Component]:
+        """Return the components of the meter."""
+        return self.device.Components or []
+
+    async def refresh(self) -> None:
+        """Refresh the meter data from the hub."""
+        await self.hub.async_refresh_device(self.address)
 
     def get_variable(self, key: str) -> Variable:
         """Get a specific variable from the meter."""
@@ -67,7 +61,7 @@ class ElectricityMeter:
             for variable in component.Variables:
                 if isinstance(variable, Variable) and variable.Name == key:
                     return variable
-        msg = f"Variable {key} not found in meter {self.hardware_address}"
+        msg = f"Variable {key} not found in meter {self.address}"
         raise KeyError(msg)
 
     def get_all_variables(self, include_null: bool = False) -> list[Variable]:

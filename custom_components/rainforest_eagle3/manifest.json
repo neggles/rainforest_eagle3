@@ -1,5 +1,5 @@
 {
-    "domain": "rainforest_automation",
+    "domain": "rainforest_eagle3",
     "name": "Rainforest Eagle 3",
     "after_dependencies": ["http"],
     "integration_type": "hub",
@@ -8,5 +8,6 @@
     "documentation": "https://github.com/neggles/rainforest_eagle3",
     "iot_class": "local_polling",
     "issue_tracker": "https://github.com/neggles/rainforest_eagle3/issues",
-    "version": "0.1.0"
+    "version": "0.1.1",
+    "requirements": ["pydantic==2.11.9"]
 }
