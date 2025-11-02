@@ -49,7 +49,7 @@ ENTITY_DESCRIPTIONS = {
     "device": [
         SensorEntityDescription(
             name="Last Contact",
-            key="LastContact",
+            key="last_contact",
             translation_key="last_contact",
             device_class=SensorDeviceClass.TIMESTAMP,
             entity_category=EntityCategory.DIAGNOSTIC,
