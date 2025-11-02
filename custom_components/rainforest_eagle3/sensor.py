@@ -53,6 +53,7 @@ ENTITY_DESCRIPTIONS = {
             translation_key="last_contact",
             device_class=SensorDeviceClass.TIMESTAMP,
             entity_category=EntityCategory.DIAGNOSTIC,
+            entity_registry_visible_default=False,
         ),
     ],
 }
