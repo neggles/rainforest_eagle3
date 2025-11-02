@@ -1,22 +1,26 @@
 {
-    "editor.detectIndentation": false,
-    "editor.tabSize": 4,
-    "editor.insertSpaces": true,
+  "editor.detectIndentation": false,
+  "editor.tabSize": 4,
+  "editor.insertSpaces": true,
 
-    "[python]": {
-        "diffEditor.ignoreTrimWhitespace": false,
-        "editor.defaultColorDecorators": "never",
-        "gitlens.codeLens.symbolScopes": ["!Module"],
-        "editor.formatOnSave": true,
-        "editor.formatOnType": true,
-        "editor.wordBasedSuggestions": "off",
-        "editor.codeActionsOnSave": {
-            "source.organizeImports": "explicit"
-        }
-    },
-    "ruff.lineLength": 110,
-    "[json][jsonc]": {
-        "editor.defaultFormatter": "vscode.json-language-features"
-    },
-    "python.analysis.typeCheckingMode": "basic"
+  "[python]": {
+    "diffEditor.ignoreTrimWhitespace": false,
+    "editor.defaultColorDecorators": "never",
+    "gitlens.codeLens.symbolScopes": ["!Module"],
+    "editor.formatOnSave": true,
+    "editor.formatOnType": true,
+    "editor.wordBasedSuggestions": "off",
+    "editor.codeActionsOnSave": {
+      "source.organizeImports": "always"
+    }
+  },
+  "ruff.lineLength": 110,
+  "python.analysis.typeCheckingMode": "basic",
+
+  "[json][jsonc]": {
+    "editor.tabSize": 2,
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "prettier.tabWidth": 4
 }

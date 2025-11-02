@@ -1,13 +1,13 @@
 {
-    "domain": "rainforest_eagle3",
-    "name": "Rainforest Eagle 3",
-    "after_dependencies": ["http"],
-    "integration_type": "hub",
-    "codeowners": ["@neggles"],
-    "config_flow": true,
-    "documentation": "https://github.com/neggles/rainforest_eagle3",
-    "iot_class": "local_polling",
-    "issue_tracker": "https://github.com/neggles/rainforest_eagle3/issues",
-    "version": "0.1.1",
-    "requirements": ["pydantic==2.11.9"]
+  "domain": "rainforest_eagle3",
+  "name": "Rainforest Eagle 3",
+  "after_dependencies": ["http"],
+  "codeowners": ["@neggles"],
+  "config_flow": true,
+  "documentation": "https://github.com/neggles/rainforest_eagle3",
+  "integration_type": "hub",
+  "iot_class": "local_polling",
+  "issue_tracker": "https://github.com/neggles/rainforest_eagle3/issues",
+  "requirements": ["pydantic==2.11.9"],
+  "version": "0.1.1"
 }
