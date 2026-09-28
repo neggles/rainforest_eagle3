@@ -13,4 +13,4 @@ logger:
     custom_components.rainforest_automation: debug
 
 bluetooth:
-   enable: false
+  enable: false
