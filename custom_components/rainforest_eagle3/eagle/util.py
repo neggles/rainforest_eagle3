@@ -57,7 +57,7 @@ def resolve_host_ex(host: str) -> tuple[str, str | None]:
         if addr is None:
             _LOGGER.warning("Failed to resolve host %s", host)
             # FQDN didn't work, so let's try suffixes
-            host = host.split(".")[0]
+            host = host.split(".", maxsplit=1)[0]
 
     for suffix in ["", ".local", ".lan", ".home"]:
         fqdn, addr = resolve_host(f"{host}{suffix}", missing_ok=True)

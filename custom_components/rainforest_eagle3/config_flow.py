@@ -64,7 +64,7 @@ async def validate_input(
         raise ConnectionError(msg)
     await hub.session.close()
     return {
-        "title": f"{hostname.split('.')[0]} ({cloud_id})",
+        "title": f"{hostname.split('.', maxsplit=1)[0]} ({cloud_id})",
         "unique_id": f"{cloud_id.lower()}-{install_code[-4:]}",
     }
 
